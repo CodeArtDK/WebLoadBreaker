@@ -379,6 +379,9 @@
                 document.getElementById('closeBtn').disabled=true;
                 document.getElementById('results').style.display='none';
 
+                //Track
+                _paq.push(['trackEvent', 'Test', 'Run', threads+' '+reqgoal]);
+
 
                 let s1=new Date();
                 const allData = Promise.all(runner);
