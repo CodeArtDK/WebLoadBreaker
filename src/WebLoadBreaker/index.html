@@ -8,7 +8,6 @@
         <!-- Matomo -->
         <script>
             var _paq = window._paq = window._paq || [];
-            /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
             _paq.push(["disableCookies"]);
             _paq.push(['trackPageView']);
             _paq.push(['enableLinkTracking']);
@@ -24,9 +23,12 @@
     </head>
     <body>
         <div class="container">
-            <a href="https://www.codeart.dk/"><img src="https://www.codeart.dk/contentassets/ec584942f4c84114aed03c3ec8161130/logo-2.png" style="width:200px;" alt="CodeArt"></a>
-            <h1>WebLoadBreaker - 100% Browser based load test tool, by CodeArt.</h1>
-            <p></p>
+            <a href="https://www.codeart.dk/"><img src="https://www.codeart.dk/contentassets/ec584942f4c84114aed03c3ec8161130/logo-2.png" style="width:100px;" alt="CodeArt"></a>
+            <h1 class="text-center">WebLoadBreaker</h1>
+            <h5 class="text-center">100% browser-based load test tool. A <a href="https://www.codeart.dk/">CodeArt</a> project.</h5>
+            <p class="text-center">
+                This is an open source, browser based (runs on the client with javascript) tool for doing simple load testing on specific target urls.
+            </p>
             <br/>
 
             <div class="alert alert-warning d-none" id="warning" role="alert">
@@ -40,12 +42,12 @@
                 </div>
                 <div class="col-md-6">
                     <label for="threads" class="form-label">Number of users to emulate:  <span id="threadNo">8</span></label>
-                    <input type="range" class="form-range" min="1" max="64" value="8" id="threads" aria-describedby="threadsHelp" oninput="document.getElementById('threadNo').innerText=this.value;">
+                    <input type="range" class="form-range" min="1" max="100" value="8" id="threads" aria-describedby="threadsHelp" oninput="javascript:document.getElementById('threadNo').innerText=this.value;">
                     <div id="threadsHelp" class="form-text">The number simultaneous requests.</div>
                 </div>
                 <div class="col-md-6">
                     <label for="reqgoal" class="form-label">Number of requests: <span id="reqNo">30</span></label>
-                    <input type="range" class="form-range" min="1" max="100" id="reqgoal" value="30" aria-describedby="reqgoalHelp" oninput="document.getElementById('reqNo').innerText=this.value;">
+                    <input type="range" class="form-range" min="1" max="500" id="reqgoal" value="30" aria-describedby="reqgoalHelp" oninput="javascript:document.getElementById('reqNo').innerText=this.value;">
                     <div id="reqgoalHelp" class="form-text">The number of requests to test.</div>
                 </div>
                 <div class="col-12">
@@ -136,7 +138,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                <!-- <button type="button" class="btn btn-warning" id="stopBtn">Stop test</button> -->
+                <button type="button" class="btn btn-warning" id="stopBtn">Stop test</button>
                 <button type="button" class="btn btn-primary" data-bs-dismiss="modal" disabled id="closeBtn">Close</button>
                 </div>
             </div>
@@ -145,19 +147,13 @@
 
         <script>
             //TODO:
-            // - Stop when running
-            // - details when running
             // - handle errors elegantly
-
             // {rand10-100} placeholder in url
-            // delete should work
-            // Stop should work
             // Support query parameters
-            // logo, matomo tracker, github, blog post
 
 
             //Initialization!
-            var trowtemplate='<tr><th scope="row">#date#</th><td>#details#</td><th scope="row">#rps#</th><td>#min#</td><td>#avg#</td><td>#median#</td><td>#max#</td><td><div class="btn-group" role="group"><button type="button" class="btn btn-success" onclick=\'javascript:setFormValues("#target#","#users#","#requests#");\'>Repeat</button><button type="button" class="btn btn-danger">Delete</button></div></td></tr>';
+            var trowtemplate='<tr><th scope="row">#date#</th><td>#details#</td><th scope="row">#rps#</th><td>#min#</td><td>#avg#</td><td>#median#</td><td>#max#</td><td><div class="btn-group" role="group"><button type="button" class="btn btn-success" onclick=\'javascript:setFormValues("#target#","#users#","#requests#");showModal();\'>Repeat</button><button type="button" class="btn btn-danger" onclick=\'javascript:deleteEntry("#timeid#");\'>Delete</button></div></td></tr>';
 
             var urlhistoryStr=localStorage.getItem('urlhistory');
             var urlhistory=[];
@@ -184,6 +180,7 @@
                 w.innerText="Your browser does not support all the features required to measure performance correctly";
             }
 
+
             function setFormValues(target,users,requests){
                 if(target){
                     document.getElementById('target').value=target;
@@ -205,11 +202,21 @@
                 return datestring;
             }
 
+            function deleteEntry(tm){
+                let itm=resultshistory.find(elem => elem.time==tm);
+                if(!itm)return;
+                let idx=resultshistory.indexOf(itm);
+                resultshistory.splice(idx,1);
+                localStorage.setItem('resultshistory', JSON.stringify(resultshistory));
+                //TODO: If there are no more items from that target in resultshistory then remove from url history
+                ShowHistory(document.getElementById('historyHeader').value);
+            }
+
             function ShowHistory(currentUrl){
                 let grouped = resultshistory.reduce(function (r, a) {
                     r[a.url] = r[a.url] || [];
                     r[a.url].push(a);
-                return r;
+                    return r;
                 }, Object.create(null));
 
                 let hheader=document.getElementById('historyHeader');
@@ -225,6 +232,7 @@
 
                 let hbody=document.getElementById('historyBody');
                 hbody.innerHTML="";
+                if(!grouped[currentUrl]) return;
                 (grouped[currentUrl].reverse()).forEach(r => {
                     hbody.innerHTML+=trowtemplate
                         .replace('#date#',formatDate(Date.parse(r.time)))
@@ -236,6 +244,7 @@
                         .replace('#max#',r.timings.max)
                         .replace('#target#',currentUrl)
                         .replace('#users#',r.threads)
+                        .replace('#timeid#',r.time)
                         .replace('#requests#',r.reqgoal);
                         //.replace('#errors#',r.errors);
                 });
@@ -255,6 +264,14 @@
                 ShowHistory(url);
             }
 
+            function resetModal(url){
+                SetProgress(0,100);
+                document.getElementById('spinner').style.display='block';
+                document.getElementById('runModalLabel').innerText='Testing '+url;
+                document.getElementById('stopBtn').disabled=false;
+                document.getElementById('closeBtn').disabled=true;
+                document.getElementById('results').style.display='none';
+            }
 
             function calculate_load_times(skipcount) {
                 const median = arr => {
@@ -278,13 +295,16 @@
                 console.log("Calculating load times");
                 let times=[];
                 for(let i=skipcount;i<resources.length;i++){
-                    times.push(Math.round(resources[i].duration));
+                    //Validate that it is a proper resource call to target
+                    if(resources[i].initiatorType=='fetch' && !isNaN(resources[i].duration)){
+                        times.push(Math.round(resources[i].duration));
+                    }
                 }
                 console.log(times);
                 let result = {
                     min: Math.min(...times),
                     max: Math.max(...times),
-                    avg: Math.round((times)/times.length),
+                    avg: Math.round(arrSum(times)/times.length),
                     med: Math.round(median(times))
                 };
                 console.log(result);
@@ -307,6 +327,18 @@
             runModal.addEventListener('shown.bs.modal', () => {
                 RunTest();
             });
+            runModal.addEventListener('show.bs.modal', () => {
+                resetModal('');
+            });
+            function hideModal() {
+                const modal = bootstrap.Modal.getInstance(runModal);    
+                modal.hide();
+            }
+            function showModal(){
+                const modal = bootstrap.Modal.getInstance(runModal);    
+                modal.show();
+            }
+
 
 
             function RunTest(){
@@ -321,6 +353,7 @@
                 let errors=0;
                 let stopping=false;
                 let rescount=get_resource_count();
+                let controller = new AbortController();
 
                 function done(){
                     let s2=new Date();
@@ -346,12 +379,12 @@
 
                     
                     document.getElementById('spinner').style.display='none';
-                    //document.getElementById('stopBtn').disabled=true;
+                    document.getElementById('stopBtn').disabled=true;
                     document.getElementById('closeBtn').disabled=false;
                 }
 
                 function RecursiveFetch(){
-                    const fetchReq = fetch(url, {mode: 'no-cors', cache: 'no-cache'})
+                    const fetchReq = fetch(url, {mode: 'no-cors', cache: 'no-cache', signal: controller.signal})
                         .then((res) => {
                             let t=totalreqs++;
                             // if(!res.ok) errors++;
@@ -371,16 +404,18 @@
                     runner.push(RecursiveFetch());
                 }
 
+                //Start logic
                 console.log('starter...');
-                SetProgress(0,100);
-                document.getElementById('spinner').style.display='block';
-                document.getElementById('runModalLabel').innerText='Testing '+url;
-                // document.getElementById('stopBtn').disabled=false;
-                document.getElementById('closeBtn').disabled=true;
-                document.getElementById('results').style.display='none';
+                resetModal(url);
+                document.getElementById('stopBtn').onclick=(e) => {
+                    controller.abort();
+                    hideModal();
+                };
+                
+
 
                 //Track
-                _paq.push(['trackEvent', 'Test', 'Run', threads+' '+reqgoal]);
+                _paq.push(['trackEvent', 'Test', 'Run', threads+'/'+reqgoal]);
 
 
                 let s1=new Date();
