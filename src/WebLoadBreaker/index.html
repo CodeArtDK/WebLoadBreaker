@@ -284,8 +284,8 @@
                 let result = {
                     min: Math.min(...times),
                     max: Math.max(...times),
-                    avg: arrSum(times)/times.length,
-                    med: median(times)
+                    avg: Math.round((times)/times.length),
+                    med: Math.round(median(times))
                 };
                 console.log(result);
                 return result;
