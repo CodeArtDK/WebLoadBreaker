@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>WebLoadBreaker by CodeArt</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+        <!-- Matomo -->
+        <script>
+            var _paq = window._paq = window._paq || [];
+            /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+            _paq.push(["disableCookies"]);
+            _paq.push(['trackPageView']);
+            _paq.push(['enableLinkTracking']);
+            (function() {
+            var u="https://matomo.bering.codeart.dk/";
+            _paq.push(['setTrackerUrl', u+'matomo.php']);
+            _paq.push(['setSiteId', '7']);
+            var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+            g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+            })();
+        </script>
+        <!-- End Matomo Code -->
+    </head>
+    <body>
+        <div class="container">
+            <a href="https://www.codeart.dk/"><img src="https://www.codeart.dk/contentassets/ec584942f4c84114aed03c3ec8161130/logo-2.png" style="width:200px;" alt="CodeArt"></a>
+            <h1>WebLoadBreaker - 100% Browser based load test tool, by CodeArt.</h1>
+            <p></p>
+            <br/>
+
+            <div class="alert alert-warning d-none" id="warning" role="alert">
+              </div>
+
+            <form  class="row g-3">
+                <div class="col-md-12">
+                    <label for="target" class="form-label">Url to test:</label>
+                    <input type="url" class="form-control" id="target" aria-describedby="targetHelp" placeholder="Paste in url to test">
+                    <div id="targetHelp" class="form-text">The target url to test.</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="threads" class="form-label">Number of users to emulate:  <span id="threadNo">8</span></label>
+                    <input type="range" class="form-range" min="1" max="64" value="8" id="threads" aria-describedby="threadsHelp" oninput="document.getElementById('threadNo').innerText=this.value;">
+                    <div id="threadsHelp" class="form-text">The number simultaneous requests.</div>
+                </div>
+                <div class="col-md-6">
+                    <label for="reqgoal" class="form-label">Number of requests: <span id="reqNo">30</span></label>
+                    <input type="range" class="form-range" min="1" max="100" id="reqgoal" value="30" aria-describedby="reqgoalHelp" oninput="document.getElementById('reqNo').innerText=this.value;">
+                    <div id="reqgoalHelp" class="form-text">The number of requests to test.</div>
+                </div>
+                <div class="col-12">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#runModal">Run test</button>
+                </div>
+            </form>
+
+            <div class="d-none" id="resultspane">
+                <hr/>
+                <h3>Previous results</h3>
+
+                <select id="historyHeader" class="form-select form-select-lg mb-3" aria-label=".form-select-lg example" onchange="javascript:ShowHistory(this.value)">
+                  </select>
+                <table class="table table-striped" id="historyTable">
+                    <thead>
+                    <tr>
+                        <th class="col-2" scope="col">Date</th>
+                        <th class="col-2" scope="col">Users & requests</th>
+                        <th class="col-1" scope="col">RPS</th>
+                        <th class="col-1" scope="col">Min (ms)</th>
+                        <th class="col-1" scope="col">Avg (ms)</th>
+                        <th class="col-1" scope="col">Median (ms)</th>
+                        <th class="col-1" scope="col">Max (ms)</th>
+                        <!-- <th class="col-1" scope="col">Errors</th> -->
+                        <th class="col-2" scope="col">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <!-- Modal -->
+        <div class="modal fade" id="runModal" tabindex="-1" aria-labelledby="runModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                <h1 class="modal-title fs-5" id="runModalLabel">Testing...</h1>
+                <!-- <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
+                </div>
+                <div class="modal-body">
+                    <div class="progress">
+                        <div class="progress-bar" id="pbar" role="progressbar" aria-label="Basic example" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="spinner-border mx-auto m-5" role="status" id="spinner">
+                        <span class="visually-hidden">Running test...</span>
+                    </div>
+                    <div id="results" style="display:none">
+                        <ol class="list-group list-group-numbered">
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                              <div class="ms-2 me-auto">
+                                <div class="fw-bold">Requests per second</div>
+                                How many requests has the server handled per second.
+                              </div>
+                              <span class="badge bg-primary rounded-pill" id="rps">14</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                              <div class="ms-2 me-auto">
+                                <div class="fw-bold">Min request time</div>
+                                How many ms was the fastest response.
+                              </div>
+                              <span class="badge bg-primary rounded-pill" id="mintime">14</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                              <div class="ms-2 me-auto">
+                                <div class="fw-bold">Median time</div>
+                                How many ms was the median response.
+                              </div>
+                              <span class="badge bg-primary rounded-pill" id="mediantime">14</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                  <div class="fw-bold">Average time</div>
+                                  How many ms was the average response time.
+                                </div>
+                                <span class="badge bg-primary rounded-pill" id="avgtime">14</span>
+                              </li>
+                              <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                  <div class="fw-bold">Max time</div>
+                                  How many ms was the maximum response time.
+                                </div>
+                                <span class="badge bg-primary rounded-pill" id="maxtime">14</span>
+                              </li>
+                          </ol>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                <!-- <button type="button" class="btn btn-warning" id="stopBtn">Stop test</button> -->
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" disabled id="closeBtn">Close</button>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <script>
+            //TODO:
+            // - Stop when running
+            // - details when running
+            // - handle errors elegantly
+
+            // {rand10-100} placeholder in url
+            // delete should work
+            // Stop should work
+            // Support query parameters
+            // logo, matomo tracker, github, blog post
+
+
+            //Initialization!
+            var trowtemplate='<tr><th scope="row">#date#</th><td>#details#</td><th scope="row">#rps#</th><td>#min#</td><td>#avg#</td><td>#median#</td><td>#max#</td><td><div class="btn-group" role="group"><button type="button" class="btn btn-success" onclick=\'javascript:setFormValues("#target#","#users#","#requests#");\'>Repeat</button><button type="button" class="btn btn-danger">Delete</button></div></td></tr>';
+
+            var urlhistoryStr=localStorage.getItem('urlhistory');
+            var urlhistory=[];
+            if(urlhistoryStr)   urlhistory=JSON.parse(urlhistoryStr);
+            var resultshistoryStr=localStorage.getItem('resultshistory');
+            var resultshistory=[];
+            if(resultshistoryStr) resultshistory=JSON.parse(resultshistoryStr);
+
+
+
+
+            //Set form defaults
+            setFormValues(localStorage.getItem('target'),localStorage.getItem('threads'),localStorage.getItem('reqgoal'));
+
+            if(urlhistory.length>0){
+                //Show history
+                ShowHistory(localStorage.getItem('target'));
+            }
+
+            //Show warning if performance numbers are not supported in browser
+            if(performance==undefined){
+                let w=document.getElementById('warning');
+                w.classList.remove('d-none');
+                w.innerText="Your browser does not support all the features required to measure performance correctly";
+            }
+
+            function setFormValues(target,users,requests){
+                if(target){
+                    document.getElementById('target').value=target;
+                }
+                if(users){
+                    document.getElementById('threads').value=users;
+                    document.getElementById('threadNo').innerText=users;
+                }
+                if(requests){
+                    document.getElementById('reqgoal').value=requests;
+                    document.getElementById('reqNo').innerText=requests;
+                }
+            }
+
+            function formatDate(date){
+                
+                let d=new Date(date);
+                var datestring = d.getFullYear()  + "-" + (d.getMonth()+1).toString().padStart(2, '0')+"-"+d.getDate().toString().padStart(2, '0')   + " " +d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0')+ ":" + d.getSeconds().toString().padStart(2, '0');
+                return datestring;
+            }
+
+            function ShowHistory(currentUrl){
+                let grouped = resultshistory.reduce(function (r, a) {
+                    r[a.url] = r[a.url] || [];
+                    r[a.url].push(a);
+                return r;
+                }, Object.create(null));
+
+                let hheader=document.getElementById('historyHeader');
+                hheader.innerHTML='';
+                (urlhistory).forEach(u => { 
+                    hheader.appendChild(
+                        Object.assign(
+                            document.createElement('option'),
+                            { value:u, selected:(u == currentUrl)}
+                        )
+                    ).innerText=u; 
+                });
+
+                let hbody=document.getElementById('historyBody');
+                hbody.innerHTML="";
+                (grouped[currentUrl].reverse()).forEach(r => {
+                    hbody.innerHTML+=trowtemplate
+                        .replace('#date#',formatDate(Date.parse(r.time)))
+                        .replace('#rps#',r.rps)
+                        .replace('#details#',r.threads+' users, '+r.reqgoal+' requests')
+                        .replace('#min#',r.timings.min)
+                        .replace('#avg#',r.timings.avg)
+                        .replace('#median#',r.timings.med)
+                        .replace('#max#',r.timings.max)
+                        .replace('#target#',currentUrl)
+                        .replace('#users#',r.threads)
+                        .replace('#requests#',r.reqgoal);
+                        //.replace('#errors#',r.errors);
+                });
+
+                //Unhide history
+                document.getElementById('resultspane').classList.remove('d-none');
+            }
+
+
+            function addTestResults(url,results){
+                //results contain time, url, threads, req-per-minute, min, max, median
+                //Add to urlhistory if it doesn't already exist there (and save to local storage) and to resulthistory
+                if(!urlhistory.includes(url))  urlhistory.push(url);
+                resultshistory.push(results);
+                localStorage.setItem('urlhistory', JSON.stringify(urlhistory));
+                localStorage.setItem('resultshistory', JSON.stringify(resultshistory));
+                ShowHistory(url);
+            }
+
+
+            function calculate_load_times(skipcount) {
+                const median = arr => {
+                    const mid = Math.floor(arr.length / 2),
+                    nums = [...arr].sort((a, b) => a - b);
+                    return arr.length % 2 !== 0 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
+                };
+                const arrSum = arr => arr.reduce((a,b) => a + b, 0);
+                // Check performance support
+                if (performance === undefined) {
+                    console.log("Unable to calculate load times - not supported in browser");
+                    return;
+                }
+
+                // Get a list of "resource" performance entries
+                const resources = performance.getEntriesByType("resource");
+                if (resources === undefined || resources.length <= skipcount) {
+                    console.log("Unable to Load Times: there are NO new `resource` performance records");
+                    return;
+                }
+                console.log("Calculating load times");
+                let times=[];
+                for(let i=skipcount;i<resources.length;i++){
+                    times.push(Math.round(resources[i].duration));
+                }
+                console.log(times);
+                let result = {
+                    min: Math.min(...times),
+                    max: Math.max(...times),
+                    avg: arrSum(times)/times.length,
+                    med: median(times)
+                };
+                console.log(result);
+                return result;
+            }
+
+            function get_resource_count(){
+                return performance.getEntriesByType("resource").length;
+            }
+
+
+            function SetProgress(val,max){
+                let progress=document.getElementById('pbar');
+                let pct=((val*100)/max);
+                progress.style.width=pct+"%";
+                progress.setAttribute('aria-valuenow',pct);
+            }
+
+            const runModal = document.getElementById('runModal');
+            runModal.addEventListener('shown.bs.modal', () => {
+                RunTest();
+            });
+
+
+            function RunTest(){
+                const url=document.getElementById('target').value;
+                localStorage.setItem('target',url);
+                const threads=document.getElementById('threads').value;
+                localStorage.setItem('threads',threads);
+                const reqgoal=document.getElementById('reqgoal').value;
+                localStorage.setItem('reqgoal',reqgoal);
+
+                let totalreqs=0;
+                let errors=0;
+                let stopping=false;
+                let rescount=get_resource_count();
+
+                function done(){
+                    let s2=new Date();
+                    let dif=s2.getTime()-s1.getTime();
+                    let rps = Math.round((totalreqs/(dif/1000))*100)/100;
+                    let t=calculate_load_times(rescount);
+                    addTestResults(url,{
+                        url: url,
+                        rps: rps,
+                        threads: threads,
+                        reqgoal: reqgoal,
+                        timings: t,
+                        time: new Date(),
+                        errors: errors
+                    });
+                    document.getElementById('results').style.display='block';
+                    document.getElementById('rps').innerText=rps;
+                    document.getElementById('mintime').innerText=t.min;
+                    document.getElementById('mediantime').innerText=t.med;
+                    document.getElementById('avgtime').innerText=t.avg;
+                    document.getElementById('maxtime').innerText=t.max;
+                    // document.getElementById('errors').innerText=errors;
+
+                    
+                    document.getElementById('spinner').style.display='none';
+                    //document.getElementById('stopBtn').disabled=true;
+                    document.getElementById('closeBtn').disabled=false;
+                }
+
+                function RecursiveFetch(){
+                    const fetchReq = fetch(url, {mode: 'no-cors', cache: 'no-cache'})
+                        .then((res) => {
+                            let t=totalreqs++;
+                            // if(!res.ok) errors++;
+                            SetProgress(t,reqgoal);
+                            //console.log(t+' done');
+                            if(t>=reqgoal && !stopping){
+                                stopping=true;
+                                done();
+                            } else if(!stopping) RecursiveFetch();
+                            else console.log('Stopping '+totalreqs);
+                        });
+                    return fetchReq;
+                }
+
+                let runner=[];
+                for(let i=0;i<threads;i++){
+                    runner.push(RecursiveFetch());
+                }
+
+                console.log('starter...');
+                SetProgress(0,100);
+                document.getElementById('spinner').style.display='block';
+                document.getElementById('runModalLabel').innerText='Testing '+url;
+                // document.getElementById('stopBtn').disabled=false;
+                document.getElementById('closeBtn').disabled=true;
+                document.getElementById('results').style.display='none';
+
+
+                let s1=new Date();
+                const allData = Promise.all(runner);
+
+                allData.then((res) => {
+                    console.log('done with '+totalreqs);
+                });
+ 
+            }
+        </script>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+
+    </body>
+</html>
