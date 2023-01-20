@@ -1,183 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>WebLoadBreaker by CodeArt</title>
-        <link rel="icon" type="image/x-icon" href="favicon.ico">
-        <link rel="manifest" href="manifest.json">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Wallpoet&display=swap" rel="stylesheet">
-        <!-- Matomo -->
-        <script>
-            var _paq = window._paq = window._paq || [];
-            _paq.push(["disableCookies"]);
-            _paq.push(['trackPageView']);
-            _paq.push(['enableLinkTracking']);
-            (function() {
-            var u="https://matomo.bering.codeart.dk/";
-            _paq.push(['setTrackerUrl', u+'matomo.php']);
-            _paq.push(['setSiteId', '7']);
-            var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
-            g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
-            })();
-        </script>
-        <style>
-            .link {
-                color: rgb(45,46,103);
-            }
-
-            .link:hover {
-                color: #0d6efd;
-            }
-        </style>
-        <!-- End Matomo Code -->
-    </head>
-    <body>
-        <div class="container py-4">
-            <h1 class="text-center mb-1 d-block d-md-none" style="font-family: 'Wallpoet', cursive; margin-bottom: 2rem!important;">WebLoad
-                <span style="transform: rotate(15deg) translate(0px,45px); display: inline-block;">Breaker</span>
-            </h1>
-            <h1 class="text-center mb-1 d-none d-md-block" style="font-family: 'Wallpoet', cursive; font-size: 4rem;">WebLoad
-                <span style="transform: rotate(15deg) translate(0px,45px); display: inline-block;">Breaker</span>
-            </h1>
-            <p class="text-center" style="margin-bottom: 4rem;">by 
-                <a href="https://www.codeart.dk/">
-                    <img src="https://www.codeart.dk/contentassets/ec584942f4c84114aed03c3ec8161130/logo-2.png" style="width:100px;" alt="CodeArt">
-                </a>
-            </p>
-            <h5 class="text-center">100% browser-based load test tool</h5>
-            <p class="text-center col-md-9 mx-auto">
-                This is an <a class="link" href="https://github.com/CodeArtDK/WebLoadBreaker">open source</a>, browser based (runs on the client with javascript) tool for doing simple load testing on specific target urls.
-                Pick a target url to hit, set a number of concurrent users to emulate and how many requests should be run and set your browser to work.<br/>
-                Since this is testing using javascript in your local browser it can test on any urls you can access.
-            </p>
-            <br/>
-
-            <div class="alert alert-warning d-none" id="warning" role="alert">
-              </div>
-
-            <form  class="row g-3 mx-1 p-3 pb-4 p-md-5" style="box-shadow: 4px 4px black; border: 2px solid;">
-                <div class="col-md-12 mb-md-4">
-                    <label for="target" class="form-label" style="font-weight: 700; font-size: 1.2rem;">Url to test:</label>
-                    <input type="url" class="form-control" id="target" aria-describedby="targetHelp" placeholder="Paste in url to test" style="border: none; border-bottom: 2px solid #0d6efd; color:#0d6efd; border-radius: 0; padding-left: 0;">
-                    <div id="targetHelp" class="form-text">The target url to test. Hint: Use {rand10-100} in the url to insert a random number between 10 and 100.</div>
-                </div>
-                <div class="col-md-6 mb-md-4">
-                    <label for="threads" class="form-label">Number of users to emulate:  <span id="threadNo">8</span></label>
-                    <input type="range" class="form-range" min="1" max="100" value="8" id="threads" aria-describedby="threadsHelp" oninput="javascript:document.getElementById('threadNo').innerText=this.value;">
-                    <div id="threadsHelp" class="form-text">The number simultaneous requests.</div>
-                </div>
-                <div class="col-md-6 mb-md-4">
-                    <label for="reqgoal" class="form-label">Number of requests: <span id="reqNo">30</span></label>
-                    <input type="range" class="form-range" min="1" max="500" id="reqgoal" value="30" aria-describedby="reqgoalHelp" oninput="javascript:document.getElementById('reqNo').innerText=this.value;">
-                    <div id="reqgoalHelp" class="form-text">The number of requests to test.</div>
-                </div>
-                <div class="col-12">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#runModal">Run test</button>
-                </div>
-            </form>
-
-            <div class="d-none py-5" id="resultspane">
-                <h6>Previous results</h6>
-
-                <select id="historyHeader" class="form-select form-select-lg mb-3" aria-label=".form-select-lg example" onchange="javascript:ShowHistory(this.value)" style="font-size: 1rem;">
-                  </select>
-                <table class="table table-striped" id="historyTable">
-                    <thead>
-                    <tr>
-                        <th class="col-2" scope="col">Date</th>
-                        <th class="col-2" scope="col">Users & requests</th>
-                        <th class="col-1" scope="col">RPS</th>
-                        <th class="col-1" scope="col">Min (ms)</th>
-                        <th class="col-1" scope="col">Avg (ms)</th>
-                        <th class="col-1" scope="col">Median (ms)</th>
-                        <th class="col-1" scope="col">Max (ms)</th>
-                        <!-- <th class="col-1" scope="col">Errors</th> -->
-                        <th class="col-2" scope="col">Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody id="historyBody">
-                    </tbody>
-                </table>
-            </div>
-
-        </div>
-
-        <!-- Modal -->
-        <div class="modal fade" id="runModal" tabindex="-1" aria-labelledby="runModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                <h1 class="modal-title fs-5" id="runModalLabel">Testing...</h1>
-                <!-- <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
-                </div>
-                <div class="modal-body">
-                    <div class="progress">
-                        <div class="progress-bar" id="pbar" role="progressbar" aria-label="Basic example" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                    <div class="spinner-border mx-auto m-5" role="status" id="spinner">
-                        <span class="visually-hidden">Running test...</span>
-                    </div>
-                    <div id="results" style="display:none">
-                        <ol class="list-group list-group-numbered">
-                            <li class="list-group-item d-flex justify-content-between align-items-start">
-                              <div class="ms-2 me-auto">
-                                <div class="fw-bold">Requests per second</div>
-                                How many requests has the server handled per second.
-                              </div>
-                              <span class="badge bg-primary rounded-pill" id="rps">14</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-start">
-                              <div class="ms-2 me-auto">
-                                <div class="fw-bold">Min request time</div>
-                                How many ms was the fastest response.
-                              </div>
-                              <span class="badge bg-primary rounded-pill" id="mintime">14</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-start">
-                              <div class="ms-2 me-auto">
-                                <div class="fw-bold">Median time</div>
-                                How many ms was the median response.
-                              </div>
-                              <span class="badge bg-primary rounded-pill" id="mediantime">14</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-start">
-                                <div class="ms-2 me-auto">
-                                  <div class="fw-bold">Average time</div>
-                                  How many ms was the average response time.
-                                </div>
-                                <span class="badge bg-primary rounded-pill" id="avgtime">14</span>
-                              </li>
-                              <li class="list-group-item d-flex justify-content-between align-items-start">
-                                <div class="ms-2 me-auto">
-                                  <div class="fw-bold">Max time</div>
-                                  How many ms was the maximum response time.
-                                </div>
-                                <span class="badge bg-primary rounded-pill" id="maxtime">14</span>
-                              </li>
-                          </ol>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                <button type="button" class="btn btn-warning" id="stopBtn">Stop test</button>
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" disabled id="closeBtn">Close</button>
-                </div>
-            </div>
-            </div>
-        </div>
-        
-        <script>
-            //TODO:
+           //TODO:
             // - handle errors elegantly
-            // {rand10-100} placeholder in url
-            // Support query parameters
-
+            // Input validation
+            // Default button on enter
 
             //Initialization!
-            var trowtemplate='<tr><th scope="row">#date#</th><td>#details#</td><th scope="row">#rps#</th><td>#min#</td><td>#avg#</td><td>#median#</td><td>#max#</td><td><div class="btn-group" role="group"><button type="button" class="btn btn-outline-primary" onclick=\'javascript:setFormValues("#target#","#users#","#requests#");showModal();\'>Repeat</button><button type="button" class="btn btn-outline-danger" onclick=\'javascript:deleteEntry("#timeid#");\'>Delete</button></div></td></tr>';
+            var trowtemplate='<tr><th scope="row">#date#</th><td>#details#</td><th scope="row">#rps#</th><td>#min#</td><td>#avg#</td><td>#median#</td><td>#max#</td><td><div class="btn-group" role="group"><button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#runModal" onclick=\'javascript:setFormValues("#target#","#users#","#requests#");\'>Repeat</button><button type="button" class="btn btn-danger" onclick=\'javascript:deleteEntry("#timeid#");\'>Delete</button></div></td></tr>';
 
             var urlhistoryStr=localStorage.getItem('urlhistory');
             var urlhistory=[];
@@ -187,10 +14,15 @@
             if(resultshistoryStr) resultshistory=JSON.parse(resultshistoryStr);
 
 
-
-
             //Set form defaults
-            setFormValues(localStorage.getItem('target'),localStorage.getItem('threads'),localStorage.getItem('reqgoal'));
+            const params = new Proxy(new URLSearchParams(window.location.search), {
+                get: (searchParams, prop) => searchParams.get(prop),
+            });
+            setFormValues(
+                params.url ?? localStorage.getItem('target'),
+                params.users ?? localStorage.getItem('threads'),
+                params.requests ?? localStorage.getItem('reqgoal')
+            );
 
             if(urlhistory.length>0){
                 //Show history
@@ -277,6 +109,24 @@
                 document.getElementById('resultspane').classList.remove('d-none');
             }
 
+
+
+            function getUrlWithRandom(url){
+                function getRandomInt(min, max) {
+                    min = Math.ceil(min);
+                    max = Math.floor(max);
+                    return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
+                }
+
+                const regex=/\{rand(\d+)\-(\d+)\}/gm;
+                const array = [...url.matchAll(regex)];
+                for(let i=0;i<array.length;i++){
+                    let a=parseInt(array[i][1]);
+                    let b=parseInt(array[i][2]);
+                    url=url.replace(array[i][0], getRandomInt(a,b));
+                }
+                return url;
+            }
 
             function addTestResults(url,results){
                 //results contain time, url, threads, req-per-minute, min, max, median
@@ -408,7 +258,7 @@
                 }
 
                 function RecursiveFetch(){
-                    const fetchReq = fetch(url, {mode: 'no-cors', cache: 'no-cache', signal: controller.signal})
+                    const fetchReq = fetch(getUrlWithRandom(url), {mode: 'no-cors', cache: 'no-cache', signal: controller.signal})
                         .then((res) => {
                             let t=totalreqs++;
                             // if(!res.ok) errors++;
@@ -450,9 +300,3 @@
                 });
  
             }
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
-        <script src="Script.js"></script>
-
-    </body>
-</html>
