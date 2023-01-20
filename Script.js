@@ -1,6 +1,5 @@
            //TODO:
             // - handle errors elegantly
-            // {rand10-100} placeholder in url
             // Input validation
             // Default button on enter
 
@@ -110,6 +109,24 @@
                 document.getElementById('resultspane').classList.remove('d-none');
             }
 
+
+
+            function getUrlWithRandom(url){
+                function getRandomInt(min, max) {
+                    min = Math.ceil(min);
+                    max = Math.floor(max);
+                    return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
+                }
+
+                const regex=/\{rand(\d+)\-(\d+)\}/gm;
+                const array = [...url.matchAll(regex)];
+                for(let i=0;i<array.length;i++){
+                    let a=parseInt(array[i][1]);
+                    let b=parseInt(array[i][2]);
+                    url=url.replace(array[i][0], getRandomInt(a,b));
+                }
+                return url;
+            }
 
             function addTestResults(url,results){
                 //results contain time, url, threads, req-per-minute, min, max, median
@@ -241,7 +258,7 @@
                 }
 
                 function RecursiveFetch(){
-                    const fetchReq = fetch(url, {mode: 'no-cors', cache: 'no-cache', signal: controller.signal})
+                    const fetchReq = fetch(getUrlWithRandom(url), {mode: 'no-cors', cache: 'no-cache', signal: controller.signal})
                         .then((res) => {
                             let t=totalreqs++;
                             // if(!res.ok) errors++;
