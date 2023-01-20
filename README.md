@@ -6,7 +6,7 @@ It is intended to be used to load test on internal development environments or p
 
 After the test is completed you can see the key metric Requests Per Second that came through the server as well as min, max, average and median times.
 
-*[Try it here!](https://codeartdk.github.io/WebLoadBreaker/src/WebLoadBreaker/)*
+*[Try it here!](https://codeartdk.github.io/WebLoadBreaker/)*
 
 ## Known issues 
 - There is still a lot of outstanding stability work, validation of input and further testing needed.
