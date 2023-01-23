@@ -4,7 +4,7 @@
             // Default button on enter
 
             //Initialization!
-            var trowtemplate='<tr><th scope="row">#date#</th><td>#details#</td><th scope="row">#rps#</th><td>#min#</td><td>#avg#</td><td>#median#</td><td>#max#</td><td><div class="btn-group" role="group"><button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#runModal" onclick=\'javascript:setFormValues("#target#","#users#","#requests#");\'>Repeat</button><button type="button" class="btn btn-danger" onclick=\'javascript:deleteEntry("#timeid#");\'>Delete</button></div></td></tr>';
+            var trowtemplate='<tr><th scope="row">#date#</th><td>#details#</td><th scope="row">#rps#</th><td>#min#</td><td>#avg#</td><td>#median#</td><td>#max#</td><td><div class="btn-group" role="group"><button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#runModal" onclick=\'javascript:setFormValues("#target#","#users#","#requests#");\'>Repeat</button><button type="button" class="btn btn-outline-danger" onclick=\'javascript:deleteEntry("#timeid#");\'>Delete</button></div></td></tr>';
 
             var urlhistoryStr=localStorage.getItem('urlhistory');
             var urlhistory=[];
